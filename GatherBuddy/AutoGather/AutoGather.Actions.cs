@@ -85,17 +85,7 @@ namespace GatherBuddy.AutoGather
 
             if (EzThrottler.Throttle("Gather Window", 1000))
             {
-                List<uint> ids = new List<uint>()
-                {
-                    GatheringAddon->GatheredItemId1,
-                    GatheringAddon->GatheredItemId2,
-                    GatheringAddon->GatheredItemId3,
-                    GatheringAddon->GatheredItemId4,
-                    GatheringAddon->GatheredItemId5,
-                    GatheringAddon->GatheredItemId6,
-                    GatheringAddon->GatheredItemId7,
-                    GatheringAddon->GatheredItemId8,
-                };
+                List<uint> ids = new List<uint>(GatheringAddon->ItemIds.ToArray());
                 if (ShouldUseLuck(ids, desiredItem as Gatherable))
                     TaskManager.Enqueue(() => UseAction(Actions.Luck));
                 if (ShoulduseBYII())

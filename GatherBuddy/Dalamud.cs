@@ -28,5 +28,7 @@ public class Dalamud
     [PluginService] public static IGameInteropProvider    Interop         { get; private set; } = null!;
     [PluginService] public static ITextureProvider        Textures        { get; private set; } = null!;
     [PluginService] public static IContextMenu            ContextMenu     { get; private set; } = null!;
+    [PluginService] public static IObjectTable            ObjectTable     { get; private set; } = null!;
+
     // @formatter:on
 }

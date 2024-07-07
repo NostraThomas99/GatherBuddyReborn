@@ -539,9 +539,10 @@ public partial class Interface
             var gatherables = Dalamud.ObjectTable.Where(o => o.ObjectKind == ObjectKind.GatheringPoint);
             foreach (var obj in gatherables)
             {
-                ImGui.PushID(obj.ObjectId.ToString());
-                var node = GatherBuddy.GameData.GatheringNodes.TryGetValue(obj.ObjectId, out var n) ? n : null;
-                ImGui.Text($"{obj.ObjectId}: {obj.Name ?? "Unknown"} - DataId: {obj.DataId}");
+                // TODO unsure if GameObjectId is the correct ID we want here
+                ImGui.PushID(obj.GameObjectId.ToString());
+                var node = GatherBuddy.GameData.GatheringNodes.TryGetValue((uint)obj.GameObjectId, out var n) ? n : null; // TODO unsure if uint cast safe
+                ImGui.Text($"{obj.GameObjectId}: {obj.Name ?? "Unknown"} - DataId: {obj.DataId}");
                 ImGui.SameLine();
                 if (ImGui.SmallButton("NavTo"))
                 {

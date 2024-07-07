@@ -1,7 +1,10 @@
 ﻿using ClickLib.Bases;
 using ClickLib.Enums;
 using ClickLib.Structures;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
+using ECommons.Automation.UIInput;
+using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -40,30 +43,18 @@ namespace GatherBuddy.AutoGather
             if (GatheringAddon == null)
                 return;
 
-            List<uint> ids = new List<uint>()
-            {
-                GatheringAddon->GatheredItemId1,
-                GatheringAddon->GatheredItemId2,
-                GatheringAddon->GatheredItemId3,
-                GatheringAddon->GatheredItemId4,
-                GatheringAddon->GatheredItemId5,
-                GatheringAddon->GatheredItemId6,
-                GatheringAddon->GatheredItemId7,
-                GatheringAddon->GatheredItemId8,
-            };
+            List<uint> ids = new List<uint>(GatheringAddon->ItemIds.ToArray());
             var itemIndex = GetIndexOfItemToClick(ids, item);
             if (itemIndex < 0)
                 itemIndex = GatherBuddy.GameData.Gatherables.Where(item => ids.Contains(item.Key)).Select(item => ids.IndexOf(item.Key))
                     .FirstOrDefault();
-            var receiveEventAddress = new nint(GatheringAddon->AtkUnitBase.AtkEventListener.vfunc[2]);
-            var eventDelegate       = Marshal.GetDelegateForFunctionPointer<ReceiveEventDelegate>(receiveEventAddress);
 
-            var target    = AtkStage.GetSingleton();
-            var eventData = EventData.ForNormalTarget(target, &GatheringAddon->AtkUnitBase);
-            var inputData = InputData.Empty();
+            var target = AtkStage.Instance();
+            var eventData = ECommons.Automation.UIInput.EventData.ForNormalTarget(target, &GatheringAddon->AtkUnitBase);
+            var inputData = ECommons.Automation.UIInput.InputData.Empty();
 
-            eventDelegate.Invoke(&GatheringAddon->AtkUnitBase.AtkEventListener, EventType.CHANGE, (uint)itemIndex, eventData.Data,
-                inputData.Data);
+            TaskManager.Enqueue(() => !Svc.Condition[ConditionFlag.Gathering42]);
+            TaskManager.Enqueue(() => ClickHelper.InvokeReceiveEvent(&GatheringAddon->AtkUnitBase.AtkEventListener, ECommons.Automation.UIInput.EventType.CHANGE, (uint)itemIndex, eventData, inputData));
         }
 
         private int GetIndexOfItemToClick(List<uint> ids, IGatherable item)
