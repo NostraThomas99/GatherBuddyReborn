@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
 using GatherBuddy.Classes;
 using GatherBuddy.Config;
@@ -21,7 +22,7 @@ public partial class FishTimerWindow
     {
         private readonly ExtendedFish?         _fish;
         private readonly string                _textLine;
-        private readonly IDalamudTextureWrap   _icon;
+        private readonly ISharedImmediateTexture   _icon;
         private readonly FishRecordTimes.Times _all;
         private readonly FishRecordTimes.Times _baitSpecific;
         private readonly ColorId               _color;
@@ -95,7 +96,7 @@ public partial class FishTimerWindow
             if (Uncaught)
                 SortOrder |= 1ul << 33;
 
-            _icon       = Icons.DefaultStorage[fish.ItemData.Icon];
+            _icon       = Gui.IconStorage.DefaultStorage[fish.ItemData.Icon];
             Unavailable = false;
             if (fish.Predators.Length > 0 && !recorder.Record.Flags.HasFlag(FishRecord.Effects.Intuition))
             {
@@ -188,8 +189,8 @@ public partial class FishTimerWindow
             size.X -= window._iconSize.X;
             DrawMarkers(ptr, pos, size.Y, size.X);
 
-            // Icon
-            ImGui.Image(_icon.ImGuiHandle, window._iconSize);
+            // IconStorage
+            ImGui.Image(_icon.GetWrapOrEmpty().ImGuiHandle, window._iconSize);
             var hovered = ImGui.IsItemHovered();
 
             // Name

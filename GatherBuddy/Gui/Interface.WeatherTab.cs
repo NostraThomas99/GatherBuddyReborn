@@ -10,6 +10,7 @@ using OtterGui.Table;
 using ImGuiScene;
 using ImRaii = OtterGui.Raii.ImRaii;
 using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
 
 namespace GatherBuddy.Gui;
 
@@ -141,18 +142,18 @@ public partial class Interface
             _weathersDirty = false;
         }
 
-        private static void NamedWeather(IDalamudTextureWrap icon, string name)
+        private static void NamedWeather(ISharedImmediateTexture icon, string name)
         {
             var cursor = ImGui.GetCursorPos();
-            ImGui.Image(icon.ImGuiHandle, WeatherIconSize);
+            ImGui.Image(icon.GetWrapOrEmpty().ImGuiHandle, WeatherIconSize);
             ImGui.SetCursorPos(cursor + new Vector2(WeatherIconSize.X + ItemSpacing.X / 2, _textHeightIconOffset));
             ImGui.Text(name);
         }
 
-        private static void CenteredWeather(IDalamudTextureWrap icon, Structs.Weather weather, float offset)
+        private static void CenteredWeather(ISharedImmediateTexture icon, Structs.Weather weather, float offset)
         {
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
-            ImGui.Image(icon.ImGuiHandle, WeatherIconSize);
+            ImGui.Image(icon.GetWrapOrEmpty().ImGuiHandle, WeatherIconSize);
             ImGuiUtil.HoverTooltip($"{weather.Name} ({weather.Id})");
         }
     }

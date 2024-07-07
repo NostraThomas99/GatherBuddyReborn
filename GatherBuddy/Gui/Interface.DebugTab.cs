@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using Dalamud;
+using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects.Enums;
 using GatherBuddy.AutoGather;
 using GatherBuddy.Classes;
@@ -143,7 +144,7 @@ public partial class Interface
 
         var fw = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance();
         ImGuiUtil.DrawTableColumn("Framework Timestamp");
-        ImGuiUtil.DrawTableColumn(fw == null ? "NULL" : fw->UtcTime.TimeStamp.ToString());
+        ImGuiUtil.DrawTableColumn(fw == null ? "NULL" : fw->UtcTime.Timestamp.ToString());
         ImGuiUtil.DrawTableColumn("Framework Eorzea");
         ImGuiUtil.DrawTableColumn(fw == null ? "NULL" : fw->ClientTime.EorzeaTime.ToString());
         ImGuiUtil.DrawTableColumn("Framework Func");
@@ -183,9 +184,7 @@ public partial class Interface
         ImGuiUtil.DrawTableColumn("Event Framework Address");
         ImGuiUtil.DrawTableColumn(GatherBuddy.EventFramework.Address.ToString("X"));
         ImGuiUtil.DrawTableColumn("Fishing Manager Address");
-        ImGuiUtil.DrawTableColumn(GatherBuddy.EventFramework.FishingManager.ToString("X"));
-        ImGuiUtil.DrawTableColumn("Fishing State Address");
-        ImGuiUtil.DrawTableColumn(GatherBuddy.EventFramework.FishingStatePtr.ToString("X"));
+        ImGuiUtil.DrawTableColumn($"0x{(nint)GatherBuddy.EventFramework.FishingManager:X}");
         ImGuiUtil.DrawTableColumn("Fishing State");
         ImGuiUtil.DrawTableColumn(GatherBuddy.EventFramework.FishingState.ToString());
         ImGuiUtil.DrawTableColumn("Bite Type Address");
@@ -530,9 +529,9 @@ public partial class Interface
             var gatherables = Dalamud.ObjectTable.Where(o => o.ObjectKind == ObjectKind.GatheringPoint);
             foreach (var obj in gatherables)
             {
-                ImGui.PushID(obj.ObjectId.ToString());
-                var node = GatherBuddy.GameData.GatheringNodes.TryGetValue(obj.ObjectId, out var n) ? n : null;
-                ImGui.Text($"{obj.ObjectId}: {obj.Name ?? "Unknown"} - DataId: {obj.DataId}");
+                ImGui.PushID(obj.EntityId.ToString());
+                var node = GatherBuddy.GameData.GatheringNodes.TryGetValue(obj.EntityId, out var n) ? n : null;
+                ImGui.Text($"{obj.EntityId}: {obj.Name ?? "Unknown"} - DataId: {obj.DataId}");
                 ImGui.SameLine();
                 if (ImGui.SmallButton("NavTo"))
                 {

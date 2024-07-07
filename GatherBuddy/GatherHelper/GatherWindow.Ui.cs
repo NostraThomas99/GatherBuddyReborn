@@ -113,8 +113,8 @@ public class GatherWindow : Window
         if (ImGui.TableNextColumn())
         {
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing / 2);
-            var       icon  = Icons.DefaultStorage[item.ItemData.Icon];
-            ImGuiUtil.HoverIcon(icon.ImGuiHandle, icon.Size, new Vector2(ImGui.GetTextLineHeight()));
+            var       icon  = Gui.IconStorage.DefaultStorage[item.ItemData.Icon];
+            ImGuiUtil.HoverIcon(icon.GetWrapOrEmpty().ImGuiHandle, icon.GetWrapOrEmpty().Size, new Vector2(ImGui.GetTextLineHeight()));
             ImGui.SameLine();
             var colorId = time == TimeInterval.Always    ? ColorId.GatherWindowText :
                 time.Start > GatherBuddy.Time.ServerTime ? ColorId.GatherWindowUpcoming : ColorId.GatherWindowAvailable;

@@ -15,6 +15,8 @@ using Newtonsoft.Json;
 using ImRaii = OtterGui.Raii.ImRaii;
 using System.Text;
 using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using GatherBuddy.Time;
 using GatherBuddy.Weather;
@@ -334,8 +336,8 @@ public partial class Interface
 
         private class FlagHeader : ColumnFlags<FishRecord.Effects, FishRecord>
         {
-            private readonly float                                       _iconScale;
-            private readonly (IDalamudTextureWrap, FishRecord.Effects)[] _effects;
+            private readonly float                                           _iconScale;
+            private readonly (ISharedImmediateTexture, FishRecord.Effects)[] _effects;
 
             private static readonly FishRecord.Effects[] _values =
             {
@@ -416,18 +418,18 @@ public partial class Interface
             {
                 _effects = new[]
                 {
-                    (Icons.DefaultStorage.LoadIcon(16023, true), _values[0]),
-                    (Icons.DefaultStorage.LoadIcon(11106, true), _values[2]),
-                    (Icons.DefaultStorage.LoadIcon(11101, true), _values[4]),
-                    (Icons.DefaultStorage.LoadIcon(11102, true), _values[6]),
-                    (Icons.DefaultStorage.LoadIcon(11103, true), _values[8]),
-                    (Icons.DefaultStorage.LoadIcon(11104, true), _values[10]),
-                    (Icons.DefaultStorage.LoadIcon(11119, true), _values[12]),
-                    (Icons.DefaultStorage.LoadIcon(11116, true), _values[14]),
-                    (Icons.DefaultStorage.LoadIcon(11115, true), _values[16]),
-                    (Icons.DefaultStorage.LoadIcon(11008, true), _values[18]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(16023), _values[0]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11106), _values[2]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11101), _values[4]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11102), _values[6]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11103), _values[8]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11104), _values[10]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11119), _values[12]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11116), _values[14]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11115), _values[16]),
+                    (Icons.DefaultStorage.Provider.GetFromGameIcon(11008), _values[18]),
                 };
-                _iconScale = (float)_effects[0].Item1.Width / _effects[0].Item1.Height;
+                _iconScale = (float)_effects[0].Item1.GetWrapOrEmpty().Width / _effects[0].Item1.GetWrapOrEmpty().Height;
                 AllFlags   = Mask | (FishRecord.Effects)((uint)Mask << 16);
                 _filter    = AllFlags;
             }
@@ -450,16 +452,16 @@ public partial class Interface
             public override FishRecord.Effects FilterValue
                 => _filter;
 
-            private void DrawIcon(FishRecord item, IDalamudTextureWrap icon, FishRecord.Effects flag)
+            private void DrawIcon(FishRecord item, ISharedImmediateTexture icon, FishRecord.Effects flag)
             {
                 var size = new Vector2(TextHeight * _iconScale, TextHeight);
                 var tint = item.Flags.HasFlag(flag) ? Vector4.One : new Vector4(0.75f, 0.75f, 0.75f, 0.5f);
-                ImGui.Image(icon.ImGuiHandle, size, Vector2.Zero, Vector2.One, tint);
+                ImGui.Image(icon.GetWrapOrEmpty().ImGuiHandle, size, Vector2.Zero, Vector2.One, tint);
                 if (!ImGui.IsItemHovered())
                     return;
 
                 using var tt = ImRaii.Tooltip();
-                ImGui.Image(icon.ImGuiHandle, new Vector2(icon.Width, icon.Height));
+                ImGui.Image(icon.GetWrapOrEmpty().ImGuiHandle, new Vector2(icon.GetWrapOrEmpty().Width, icon.GetWrapOrEmpty().Height));
                 ImGui.Text(flag.ToString());
             }
 

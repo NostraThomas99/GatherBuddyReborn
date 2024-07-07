@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud;
+using Dalamud.Game;
 using Dalamud.Logging;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;

@@ -78,13 +78,13 @@ public partial class SpearfishingHelper : Window
             }
             else
             {
-                ImGui.Image(IconId.FromSpeed(fish.Speed).ImGuiHandle, iconSize);
+                ImGui.Image(Icons.FromSpeed(fish.Speed)!.GetWrapOrEmpty().ImGuiHandle, iconSize);
                 ImGui.SameLine();
-                ImGui.Image(IconId.FromSize(fish.Size).ImGuiHandle, iconSize);
+                ImGui.Image(Icons.FromSize(fish.Size)!.GetWrapOrEmpty().ImGuiHandle, iconSize);
                 ImGui.SameLine();
             }
 
-            ImGui.Image(Icons.DefaultStorage[fish.ItemData.Icon].ImGuiHandle, iconSize);
+            ImGui.Image(Gui.IconStorage.DefaultStorage[fish.ItemData.Icon]!.GetWrapOrEmpty().ImGuiHandle, iconSize);
             var pos = ImGui.GetCursorPos();
             ImGui.SameLine();
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (iconSize.Y - ImGui.GetTextLineHeight()) / 2);

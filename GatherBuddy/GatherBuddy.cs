@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using Dalamud;
+using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
@@ -75,13 +76,13 @@ public partial class GatherBuddy : IDalamudPlugin
     internal readonly GatherBuddyIpc Ipc;
     //    internal readonly WotsitIpc Wotsit;
 
-    public GatherBuddy(DalamudPluginInterface pluginInterface)
+    public GatherBuddy(IDalamudPluginInterface pluginInterface)
     {
         try
         {
             Dalamud.Initialize(pluginInterface);
             ECommonsMain.Init(pluginInterface, this);
-            Icons.InitDefaultStorage(Dalamud.Textures);
+            Gui.IconStorage.InitDefaultStorage(Dalamud.Textures);
             Log     = new Logger();
             Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
             Backup.CreateAutomaticBackup(Log, pluginInterface.ConfigDirectory, GatherBuddyBackupFiles());
@@ -94,7 +95,7 @@ public partial class GatherBuddy : IDalamudPlugin
             WeatherManager      = new WeatherManager(GameData);
             UptimeManager       = new UptimeManager(GameData);
             FishLog             = new FishLog(Dalamud.SigScanner, Dalamud.GameData);
-            EventFramework      = new EventFramework(Dalamud.SigScanner);
+            EventFramework      = new EventFramework();
             CurrentBait         = new CurrentBait(Dalamud.SigScanner);
             CurrentWeather      = new CurrentWeather(Dalamud.SigScanner);
             TugType             = new SeTugType(Dalamud.SigScanner);
@@ -104,7 +105,7 @@ public partial class GatherBuddy : IDalamudPlugin
             LocationManager     = LocationManager.Load();
             AlarmManager        = AlarmManager.Load();
             GatherWindowManager = GatherWindowManager.Load(AlarmManager);
-            AutoGather = new AutoGather.AutoGather(this);
+            AutoGather          = new AutoGather.AutoGather(this);
             AlarmManager.ForceEnable();
 
             InitializeCommands();
@@ -125,6 +126,7 @@ public partial class GatherBuddy : IDalamudPlugin
             Ipc = new GatherBuddyIpc(this);
             CheckForOGGB();
             //Wotsit = new WotsitIpc();
+            
         }
         catch
         {
@@ -170,7 +172,6 @@ public partial class GatherBuddy : IDalamudPlugin
         WindowSystem?.RemoveAllWindows();
         DisposeCommands();
         Time?.Dispose();
-        Icons.DefaultStorage?.Dispose();
         HttpClient?.Dispose();
         ECommonsMain.Dispose();
     }

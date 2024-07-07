@@ -1,45 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
 using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 
 namespace GatherBuddy.Gui;
 
-internal class Icons : IDisposable
+public class IconStorage : IDisposable
 {
-    private readonly Dictionary<uint, IDalamudTextureWrap> _icons;
-    private readonly ITextureProvider                      _provider;
+    private readonly Dictionary<uint, ISharedImmediateTexture?> _icons;
+    public readonly  ITextureProvider                           Provider;
 
-    public Icons(ITextureProvider provider, int size = 0)
+    public IconStorage(ITextureProvider provider, int size = 0)
     {
-        _icons    = new Dictionary<uint, IDalamudTextureWrap>(size);
-        _provider = provider;
+        _icons    = new Dictionary<uint, ISharedImmediateTexture?>(size);
+        Provider = provider;
     }
 
-    public IDalamudTextureWrap this[uint id]
-        => LoadIcon(id);
+    public ISharedImmediateTexture? this[uint id]
+        => GetTextureFromIconId(id);
 
-    public IDalamudTextureWrap this[int id]
-        => LoadIcon((uint)id);
+    public ISharedImmediateTexture? this[int id]
+        => GetTextureFromIconId((uint)id);
 
-    public IDalamudTextureWrap LoadIcon(uint id, bool keepAlive = false)
+    public ISharedImmediateTexture? GetTextureFromIconId(uint iconId, bool highQuality = false, uint stackCount = 0, bool hdIcon = true)
     {
-        if (_icons.TryGetValue(id, out var ret))
-            return ret;
+        GameIconLookup gameIconLookup = new GameIconLookup
+        {
+            IconId = iconId,
+            ItemHq = hdIcon,
+        };
 
-        ret        = _provider.GetIcon(id, ITextureProvider.IconFlags.HiRes, null, keepAlive)!;
-        _icons[id] = ret;
-        return ret;
+        return Dalamud.Textures.GetFromGameIcon(gameIconLookup);
     }
-
+    
     public void Dispose()
     {
-        foreach (var icon in _icons.Values)
-            icon.Dispose();
+        //??
     }
 
-    public static Icons DefaultStorage { get; private set; } = null!;
+    public static IconStorage DefaultStorage { get; private set; } = null!;
 
     public static void InitDefaultStorage(ITextureProvider provider)
-        => DefaultStorage = new Icons(provider, 1024);
+    {
+        DefaultStorage = new IconStorage(provider, 1024);
+        Icons.Init(Dalamud.GameData,provider,DefaultStorage);
+    }
 }

@@ -18,7 +18,7 @@ namespace GatherBuddy.AutoGather
 {
     public partial class AutoGather
     {
-        public bool ShouldUseLuck(List<uint> ids, Gatherable gatherable)
+        public bool ShouldUseLuck(Span<uint> ids, Gatherable gatherable)
         {
             if (gatherable == null)
                 return false;
@@ -27,9 +27,15 @@ namespace GatherBuddy.AutoGather
             if (!gatherable.GatheringData.IsHidden)
                 return false;
 
-            if (ids.Count > 0 && ids.Any(i => i == gatherable.ItemId))
+            if (ids.Length > 0)
             {
-                return false;
+                foreach (var id in ids)
+                {
+                    if(id == gatherable.ItemId)
+                    {
+                        return false;
+                    }
+                }
             }
 
             if (Player.Object.CurrentGp < GatherBuddy.Config.AutoGatherConfig.LuckConfig.MinimumGP)
@@ -85,18 +91,7 @@ namespace GatherBuddy.AutoGather
 
             if (EzThrottler.Throttle("Gather Window", 1000))
             {
-                List<uint> ids = new List<uint>()
-                {
-                    GatheringAddon->GatheredItemId1,
-                    GatheringAddon->GatheredItemId2,
-                    GatheringAddon->GatheredItemId3,
-                    GatheringAddon->GatheredItemId4,
-                    GatheringAddon->GatheredItemId5,
-                    GatheringAddon->GatheredItemId6,
-                    GatheringAddon->GatheredItemId7,
-                    GatheringAddon->GatheredItemId8,
-                };
-                if (ShouldUseLuck(ids, desiredItem as Gatherable))
+                if (ShouldUseLuck(GatheringAddon->ItemIds, desiredItem as Gatherable))
                     TaskManager.Enqueue(() => UseAction(Actions.Luck));
                 if (ShoulduseBYII())
                     TaskManager.Enqueue(() => UseAction(Actions.Bountiful));

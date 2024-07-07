@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
 using GatherBuddy.Classes;
 using GatherBuddy.Enums;
 using GatherBuddy.Interfaces;
@@ -11,15 +12,15 @@ public partial class Interface
 {
     public class ExtendedGatherable
     {
-        public Gatherable          Data;
-        public IDalamudTextureWrap Icon;
-        public string              Territories;
-        public string              Uptimes;
-        public string              Folklore;
-        public string              Level;
-        public string              NodeNames;
-        public string              Expansion;
-        public string              Aetherytes;
+        public Gatherable              Data;
+        public ISharedImmediateTexture? Icon;
+        public string                  Territories;
+        public string                  Uptimes;
+        public string                  Folklore;
+        public string                  Level;
+        public string                  NodeNames;
+        public string                  Expansion;
+        public string                  Aetherytes;
 
         public (ILocation, TimeInterval) Uptime
             => GatherBuddy.UptimeManager.BestLocation(Data);
