@@ -107,7 +107,7 @@ namespace GatherBuddy.AutoGather
 
         private void WaitForDestination()
         {
-            if (EzThrottler.Throttle("WaitForDestination", 50))
+            if (EzThrottler.Throttle("WaitForDestination", 25))
             {
                 if (CurrentDestination == null)
                     return;
@@ -174,7 +174,7 @@ namespace GatherBuddy.AutoGather
             if (CurrentDestination == null)
                 return false;
 
-            return Vector3.Distance(Player.Object.Position, CurrentDestination.Value) <= 3;
+            return Vector3.Distance(Player.Object.Position, CurrentDestination.Value) <= 5;
         }
 
         private Vector3 _lastNavigatedDestination = Vector3.Zero;

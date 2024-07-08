@@ -41,13 +41,9 @@ namespace GatherBuddy.AutoGather
                     {
                         gatheringMasterpiece->AtkUnitBase.IsVisible = true;
                     }
-
-                    if (IsPathing || IsPathGenerating)
-                    {
-                        VNavmesh_IPCSubscriber.Path_Stop();
-                    }
                     
                     TaskManager.Abort();
+                    VNavmesh_IPCSubscriber.Path_Stop();
                     HasSeenFlag    = false;
                     HiddenRevealed = false;
                     AutoStatus     = "Idle...";
@@ -123,7 +119,7 @@ namespace GatherBuddy.AutoGather
                 TaskManager.Enqueue(VNavmesh_IPCSubscriber.Path_Stop);
                 TaskManager.Enqueue(MoveToClosestAetheryte);
             }
-            else if (MapFlagPosition != null && MapFlagPosition.Value.DistanceToPlayer() > 150 && ShouldUseFlag)
+            else if (MapFlagPosition != null && MapFlagPosition.Value.DistanceToPlayer() > 250 && ShouldUseFlag)
             {
                 AutoStatus  = "Moving to farming area...";
                 TaskManager.Enqueue(MoveToFlag);
