@@ -120,6 +120,7 @@ namespace GatherBuddy.AutoGather
         }
 
         public string AutoStatus { get; set; } = "Idle";
+        public AutoGatherState AutoGatherStatus { get; set; } = AutoGatherState.Idle;
         public int LastCollectability = 0;
         public int LastIntegrity = 0;
         private BitVector32 LuckUsed;
@@ -227,6 +228,7 @@ namespace GatherBuddy.AutoGather
                  || Dalamud.Conditions[ConditionFlag.Occupied39]
                  || Dalamud.Conditions[ConditionFlag.Unconscious]
                  || Dalamud.Conditions[ConditionFlag.Gathering42]
+                 || Dalamud.Conditions[ConditionFlag.Crafting]
                  //Node is open? Fades off shortly after closing the node, can't use items (but can mount) while it's set
                  || Dalamud.Conditions[85] && !Dalamud.Conditions[ConditionFlag.Gathering]
                  || Dalamud.ClientState.LocalPlayer.CurrentHp < 1
@@ -234,6 +236,14 @@ namespace GatherBuddy.AutoGather
                     return false;
 
                 return true;
+            }
+        }
+
+        public bool IsCrafting
+        {
+            get
+            {
+                return Dalamud.Conditions[ConditionFlag.Crafting];
             }
         }
 
@@ -293,5 +303,11 @@ namespace GatherBuddy.AutoGather
         {
             return new GatherInfo(value.Item, value.Location, value.Time);
         }
+    }
+
+    public enum AutoGatherState
+    {
+        Idle,
+        Gathering,
     }
 }

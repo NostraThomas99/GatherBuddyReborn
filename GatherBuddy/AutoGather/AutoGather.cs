@@ -19,6 +19,10 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Game.Text;
 using Dalamud.Utility;
 using ECommons.ExcelServices;
+using GatherBuddy.AutoGather.Helpers;
+using ECommons;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace GatherBuddy.AutoGather
 {
@@ -64,6 +68,7 @@ namespace GatherBuddy.AutoGather
                     _movementController.DesiredPosition = Vector3.Zero;
                     StopNavigation();
                     AutoStatus = "Idle...";
+                    AutoGatherStatus = AutoGatherState.Idle;
                 }
                 else
                 {
@@ -83,12 +88,33 @@ namespace GatherBuddy.AutoGather
             WentHome = true;
 
             if (!GatherBuddy.Config.AutoGatherConfig.GoHomeWhenIdle)
+            {
+                AutoGatherStatus = AutoGatherState.Idle;
                 return;
+            }
 
             if (Lifestream_IPCSubscriber.IsEnabled && !Lifestream_IPCSubscriber.IsBusy())
+            {
                 Lifestream_IPCSubscriber.ExecuteCommand("auto");
-            else 
+                Task.Run(() =>
+                {
+                    const int maxLoops = 60;
+                    int count = 0;
+                    while (Lifestream_IPCSubscriber.IsBusy() && count < maxLoops)
+                    {
+                        Thread.Sleep(1000);
+                        count++;
+                    }
+                    // Wait until Lifestream successfully reaches it's destination before marking AutoGatherStatus as Idle
+                    // This ensure that Artisan isnt restarted while Lifestream is Busy
+                    AutoGatherStatus = AutoGatherState.Idle;
+                });
+            }
+            else
+            {
                 GatherBuddy.Log.Warning("Lifestream not found or not ready");
+                AutoGatherStatus = AutoGatherState.Idle;
+            }
         }
 
         private class NoGatherableItemsInNodeExceptions : Exception { }
@@ -126,9 +152,19 @@ namespace GatherBuddy.AutoGather
 
             if (!CanAct)
             {
-                AutoStatus = "Player is busy...";
-                return;
-            }
+                if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration)
+                {
+                    if(IsCrafting && Artisan.WasPaused)
+                    {
+                        AutoStatus = "Waiting for Artisan to stop crafting...";
+                        return;
+                    }
+                } else
+                {
+                    AutoStatus = "Player is busy...";
+                    return;
+                }
+            } 
 
             if (FreeInventorySlots == 0)
             {
@@ -223,6 +259,15 @@ namespace GatherBuddy.AutoGather
                 return;
             }
 
+            if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration)
+            {
+                if (AutoGatherStatus == AutoGatherState.Idle && !GenericHelpers.IsOccupied())
+                {
+                    Artisan.Restart();
+                    return;
+                }
+            }
+
             {//Block to limit the scope of the variable "next"
                 UpdateItemsToGather();
                 var next = ItemsToGather.FirstOrDefault();
@@ -236,7 +281,19 @@ namespace GatherBuddy.AutoGather
                     }
 
                     GoHome();
-                    AutoStatus = "No available items to gather";
+                    if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && Artisan.IsCurrentlyOperating())
+                    {
+                        AutoStatus = "Artisan is currently operating...";
+                    }
+                    else
+                    {
+                        AutoStatus = "No available items to gather";
+                    }
+                    return;
+                }
+                AutoGatherStatus = AutoGatherState.Gathering;
+
+                if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && Artisan.TryPause()) {
                     return;
                 }
 
