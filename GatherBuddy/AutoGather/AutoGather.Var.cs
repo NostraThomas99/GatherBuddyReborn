@@ -131,6 +131,7 @@ namespace GatherBuddy.AutoGather
         public readonly HashSet<Vector3> FarNodesSeenSoFar = [];
         public readonly LinkedList<Vector3> VisitedNodes = [];
         private GatherInfo? targetInfo = null;
+        private bool WasArtisanPaused = false;
 
         public void UpdateItemsToGather()
         {
@@ -192,6 +193,9 @@ namespace GatherBuddy.AutoGather
             }
         }
 
+        public unsafe AddonRecipeNote* RecipeNoteAddon
+            => (AddonRecipeNote*)Dalamud.GameGui.GetAddonByName("RecipeNote");
+
         public unsafe AddonGathering* GatheringAddon
             => (AddonGathering*)Dalamud.GameGui.GetAddonByName("Gathering");
 
@@ -229,6 +233,7 @@ namespace GatherBuddy.AutoGather
                  || Dalamud.Conditions[ConditionFlag.Unconscious]
                  || Dalamud.Conditions[ConditionFlag.Gathering42]
                  || Dalamud.Conditions[ConditionFlag.Crafting]
+                 || Dalamud.Conditions[ConditionFlag.PreparingToCraft]
                  //Node is open? Fades off shortly after closing the node, can't use items (but can mount) while it's set
                  || Dalamud.Conditions[85] && !Dalamud.Conditions[ConditionFlag.Gathering]
                  || Dalamud.ClientState.LocalPlayer.CurrentHp < 1
@@ -236,6 +241,14 @@ namespace GatherBuddy.AutoGather
                     return false;
 
                 return true;
+            }
+        }
+
+        public bool IsPreparingToCraft
+        {
+            get
+            {
+                return Dalamud.Conditions[ConditionFlag.PreparingToCraft];
             }
         }
 

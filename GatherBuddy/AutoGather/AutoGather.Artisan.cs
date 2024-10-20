@@ -1,36 +1,33 @@
 ﻿using Dalamud.Plugin.Ipc.Exceptions;
-using ECommons;
-using System;
 using ECommons.Throttlers;
+using ECommons;
 using GatherBuddy.Plugin;
+using System;
+using ECommons.DalamudServices;
 
-namespace GatherBuddy.AutoGather.Helpers
+namespace GatherBuddy.AutoGather
 {
-    /**
-     * <summary>
-     * Helper class to handle interaction with Artisan
-     * </summary>
-     */
-    internal class Artisan
+    public partial class AutoGather
     {
-        internal static bool WasPaused = false;
-
-        /**
-         * 
-         * <summary>
-         * Try to pause artisan. Returns true if successfully paused an ongoing craft
-         * </summary>
-         */
-        internal static bool TryPause()
+        internal void PauseArtisan()
         {
             try
             {
-                if (IsCurrentlyOperating() && !WasPaused)
+                if (IsArtisanOperating())
                 {
-                    WasPaused = true;
+                    WasArtisanPaused = true;
                     GatherBuddy.Log.Information("Paused Artisan");
                     Artisan_IPCSubscriber.SetStopRequest(true);
-                    return true;
+                    TaskManager.Enqueue(() => AutoStatus = "Waiting for Artisan to stop crafting...");
+                    TaskManager.Enqueue(() => !IsCrafting, 240000);
+                    TaskManager.Enqueue(() =>
+                    {
+                        if (IsCrafting)
+                        {
+                            Communicator.Print("[GatherBuddy Reborn] Requested Artisan to stop crafting but crafting state has gone longer than 4 minutes...Aborting Auto Gather");
+                            AbortAutoGather();
+                        }
+                    });
                 }
             }
             catch (IpcNotReadyError) { }
@@ -40,17 +37,11 @@ namespace GatherBuddy.AutoGather.Helpers
                     ex.Log();
                 }
             }
-            return false;
         }
 
-        /**
-         * <summary>
-         * Restart Artisan
-         * </summary>
-         */
-        internal static void Restart()
+        internal void RestartArtisan()
         {
-            if(!IsCurrentlyOperating() && WasPaused)
+            if (!IsArtisanOperating())
             {
                 GatherBuddy.Log.Information("Artisan is previously paused...Attempting to restart");
                 if (GenericHelpers.IsOccupied())
@@ -60,13 +51,13 @@ namespace GatherBuddy.AutoGather.Helpers
                 if (EzThrottler.Check("ArtisanCanReenableOccupied"))
                 {
                     GatherBuddy.Log.Information("Successfully restarted Artisan");
-                    WasPaused = false;
+                    WasArtisanPaused = false;
                     Artisan_IPCSubscriber.SetStopRequest(false);
                 }
             }
         }
 
-        internal static bool IsCurrentlyOperating()
+        internal bool IsArtisanOperating()
         {
             try
             {
