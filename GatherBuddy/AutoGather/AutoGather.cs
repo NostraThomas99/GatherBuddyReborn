@@ -153,7 +153,7 @@ namespace GatherBuddy.AutoGather
             {
                 if (IsPreparingToCraft)
                 {
-                    if(GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && !IsArtisanOperating())
+                    if(GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && Artisan_IPCSubscriber.IsEnabled && !IsArtisanOperating())
                     {
                         AutoStatus = "Artisan is currently operating...";
                     }
@@ -163,7 +163,7 @@ namespace GatherBuddy.AutoGather
                     }
                 } else if (IsCrafting)
                 {
-                    if(GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration)
+                    if(GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && Artisan_IPCSubscriber.IsEnabled)
                     {
                         AutoStatus = "Artisan is currently operating...";
                     }
@@ -267,7 +267,7 @@ namespace GatherBuddy.AutoGather
                 return;
             }
 
-            if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration)
+            if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && Artisan_IPCSubscriber.IsEnabled)
             {
                 if (AutoGatherStatus == AutoGatherState.Idle && !GenericHelpers.IsOccupied() && WasArtisanPaused)
                 {
@@ -289,7 +289,7 @@ namespace GatherBuddy.AutoGather
                     }
 
                     GoHome();
-                    if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && IsArtisanOperating())
+                    if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && Artisan_IPCSubscriber.IsEnabled && IsArtisanOperating())
                     {
                         AutoStatus = "Artisan is currently operating...";
                     }
@@ -301,9 +301,12 @@ namespace GatherBuddy.AutoGather
                 }
                 AutoGatherStatus = AutoGatherState.Gathering;
 
-                if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && !WasArtisanPaused) {
-                    PauseArtisan();
-                    return;
+                if (GatherBuddy.Config.AutoGatherConfig.EnableArtisanIntegration && Artisan_IPCSubscriber.IsEnabled) {
+                    if(IsArtisanOperating() && !WasArtisanPaused)
+                    {
+                        PauseArtisan();
+                        return;
+                    }
                 }
 
                 foreach (var (loc, time) in VisitedTimedLocations)
