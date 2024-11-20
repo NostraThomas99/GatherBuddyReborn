@@ -19,6 +19,7 @@ namespace GatherBuddy.AutoGather.Movement
         private DateTime _unstuckStart;
         private DateTime _lastCheck;
         private Vector3 _lastPosition;
+        private bool _lastWasFailure;
 
         public bool IsRunning => _movementController.Enabled;
 
@@ -45,7 +46,7 @@ namespace GatherBuddy.AutoGather.Movement
                     {
                         _lastPosition = Player.Position;
                         _lastMovement = now;
-                    } 
+                    }
                     else if (isPathing)
                     {
                         if (_lastPosition.DistanceToPlayer() >= MinMovementDistance)
@@ -59,9 +60,9 @@ namespace GatherBuddy.AutoGather.Movement
                             // If the character hasn't moved much
                             GatherBuddy.Log.Debug($"Advanced Unstuck: stuck detected. Moved {_lastPosition.DistanceToPlayer()} yalms in {now.Subtract(_lastMovement).TotalSeconds} seconds.");
                             Start(false);
-                        }                        
+                        }
                     }
-                    else
+                    else if (_lastWasFailure)
                     {
                         //vnavmesh failed to find a path
                         GatherBuddy.Log.Debug($"Advanced Unstuck: vnavmesh failure detected.");
@@ -69,6 +70,7 @@ namespace GatherBuddy.AutoGather.Movement
                     }
                 }
             }
+            _lastWasFailure = !isPathGenerating && !isPathing;
             return IsRunning;
         }
 
