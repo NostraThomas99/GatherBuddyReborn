@@ -1,5 +1,4 @@
-using Dalamud.Logging;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 
 namespace GatherBuddy.Data;
 
@@ -23,9 +22,6 @@ public static class ForcedAetherytes
     public static void ApplyMissingAetherytes(GameData data)
     {
         var sheet = data.DataManager.GetExcelSheet<TerritoryType>();
-        if (sheet == null)
-            return;
-
         foreach (var (zoneId, aetheryteId) in ZonesWithoutAetherytes)
         {
             var territoryType = sheet.GetRow(zoneId);
@@ -52,8 +48,8 @@ public static class ForcedAetherytes
         (834, 172), // Rime Dolomite -> Camp Broken Glass
         (771, 106), // Rarefied Shiitake Mushroom -> Onokoro
         (682, 148), // Purpure -> Macarenses Angle
-        (310, 104), // Rarefied Raw Triphane -> Rhalgr's Reach
-        (312, 111), // Rarefied Raw Star Spinel -> Kugane
+        //(310, 104), // Rarefied Raw Triphane -> Rhalgr's Reach
+        //(312, 111), // Rarefied Raw Star Spinel -> Kugane
     };
 
     public static void Apply(GameData data)

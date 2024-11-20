@@ -17,7 +17,7 @@ namespace GatherBuddy.AutoGather
         {
             if (gatherable == null)
                 return false;
-            if (LuckUsed[1] || NodeTarcker.HiddenRevealed)
+            if (LuckUsed[1] || NodeTracker.HiddenRevealed)
                 return false;
             if (!CheckConditions(Actions.Luck, GatherBuddy.Config.AutoGatherConfig.LuckConfig, gatherable, false /*not used*/))
                 return false;
@@ -81,9 +81,17 @@ namespace GatherBuddy.AutoGather
         {
             if (MasterpieceAddon != null)
             {
-                DoCollectibles();
+                var left = int.MaxValue;
+                if (GatherBuddy.Config.AutoGatherConfig.AbandonNodes)
+                { 
+                    if (desiredItem == null) throw new NoGatherableItemsInNodeExceptions();
+                    left = (int)QuantityTotal(desiredItem) - InventoryCount(desiredItem);
+                    if (left < 1) throw new NoGatherableItemsInNodeExceptions();
+                }
+
+                DoCollectibles(left);
             }
-            else if (GatheringAddon != null && NodeTarcker.Ready)
+            else if (GatheringAddon != null && NodeTracker.Ready)
             {
                 DoGatherWindowActions(desiredItem);
             }
@@ -93,40 +101,40 @@ namespace GatherBuddy.AutoGather
 
         private unsafe void DoGatherWindowActions(Gatherable? desiredItem)
         {
-            if (LuckUsed[1] && !LuckUsed[2] && NodeTarcker.Revisit) LuckUsed = new(0);
+            if (LuckUsed[1] && !LuckUsed[2] && NodeTracker.Revisit) LuckUsed = new(0);
 
             //Use The Giving Land out of order to gather random crystals.
-            if (ShouldUseGivingLandOutOfOrder())
+            if (ShouldUseGivingLandOutOfOrder(desiredItem))
             {
-                EnqueueGatherAction(() => UseAction(Actions.GivingLand));
+                EnqueueActionWithDelay(() => UseAction(Actions.GivingLand));
                 return;
             }
 
             if (!HasGivingLandBuff && ShouldUseLuck(desiredItem))
             {
                 LuckUsed[1] = true;
-                LuckUsed[2] = NodeTarcker.Revisit;
-                EnqueueGatherAction(() => UseAction(Actions.Luck));
+                LuckUsed[2] = NodeTracker.Revisit;
+                EnqueueActionWithDelay(() => UseAction(Actions.Luck));
                 return;
             }
 
             var (useSkills, slot) = GetItemSlotToGather(desiredItem);
             if (useSkills)
             {
-                if (ShouldUseWise(NodeTarcker.Integrity, NodeTarcker.MaxIntegrity))
-                    EnqueueGatherAction(() => UseAction(Actions.Wise));
+                if (ShouldUseWise(NodeTracker.Integrity, NodeTracker.MaxIntegrity))
+                    EnqueueActionWithDelay(() => UseAction(Actions.Wise));
                 else if (ShouldUseSolidAgeGatherables(slot))
-                    EnqueueGatherAction(() => UseAction(Actions.SolidAge));
+                    EnqueueActionWithDelay(() => UseAction(Actions.SolidAge));
                 else if (ShouldUseGivingLand(slot))
-                    EnqueueGatherAction(() => UseAction(Actions.GivingLand));
+                    EnqueueActionWithDelay(() => UseAction(Actions.GivingLand));
                 else if (ShouldUseTwelvesBounty(slot))
-                    EnqueueGatherAction(() => UseAction(Actions.TwelvesBounty));
+                    EnqueueActionWithDelay(() => UseAction(Actions.TwelvesBounty));
                 else if (ShouldUseKingII(slot))
-                    EnqueueGatherAction(() => UseAction(Actions.Yield2));
+                    EnqueueActionWithDelay(() => UseAction(Actions.Yield2));
                 else if (ShouldUseKingI(slot))
-                    EnqueueGatherAction(() => UseAction(Actions.Yield1));
+                    EnqueueActionWithDelay(() => UseAction(Actions.Yield1));
                 else if (ShouldUseBountiful(slot))
-                    EnqueueGatherAction(() => UseAction(Actions.Bountiful));
+                    EnqueueActionWithDelay(() => UseAction(Actions.Bountiful));
                 else
                     EnqueueGatherItem(slot);
             }
@@ -136,9 +144,9 @@ namespace GatherBuddy.AutoGather
             }
         }
 
-        private bool ShouldUseGivingLandOutOfOrder()
+        private bool ShouldUseGivingLandOutOfOrder(Gatherable? desiredItem)
         {
-            if (GatherBuddy.Config.AutoGatherConfig.UseGivingLandOnCooldown)
+            if (GatherBuddy.Config.AutoGatherConfig.UseGivingLandOnCooldown && desiredItem != null && desiredItem.NodeType == Enums.NodeType.Regular)
             {
                 var anyCrystal = GetAnyCrystalInNode();
                 if (anyCrystal != null && ShouldUseGivingLand(anyCrystal))
@@ -158,16 +166,20 @@ namespace GatherBuddy.AutoGather
             }
         }
 
-        private void EnqueueGatherAction(Action action, int additionalDelay = 0)
+        private void EnqueueActionWithDelay(Action action)
         {
+            var delay = GatherBuddy.Config.AutoGatherConfig.ExecutionDelay;
+
             TaskManager.Enqueue(action);
-            if (additionalDelay > 0)
-                TaskManager.DelayNextImmediate(additionalDelay);
-            TaskManager.Enqueue(() => !Svc.Condition[ConditionFlag.Gathering42]);
-            //Communicator.Print("Ready for next action.");
+
+            if (delay > 0)
+            {
+                TaskManager.Enqueue(() => CanAct);
+                TaskManager.DelayNext((int)delay);
+            }
         }
 
-        private unsafe void DoCollectibles()
+        private unsafe void DoCollectibles(int itemsLeft)
         {
             if (MasterpieceAddon == null)
                 return;
@@ -200,9 +212,9 @@ namespace GatherBuddy.AutoGather
                 LastCollectability = collectibility;
                 LastIntegrity      = integrity;
 
-                var collectibleAction = CurrentRotation.GetNextAction(MasterpieceAddon);
+                var collectibleAction = CurrentRotation.GetNextAction(MasterpieceAddon, itemsLeft);
 
-                EnqueueGatherAction(() => { UseAction(collectibleAction); });
+                EnqueueActionWithDelay(() => UseAction(collectibleAction));
             }
         }
 
@@ -253,7 +265,7 @@ namespace GatherBuddy.AutoGather
                 return false;
             if (action.EffectType is Actions.EffectType.CrystalsYield && !item.IsCrystal)
                 return false;
-            if (action.EffectType is Actions.EffectType.Integrity && NodeTarcker.Integrity == NodeTarcker.MaxIntegrity)
+            if (action.EffectType is Actions.EffectType.Integrity && NodeTracker.Integrity == NodeTracker.MaxIntegrity)
                 return false;
             if (action.EffectType is not Actions.EffectType.Other and not Actions.EffectType.GatherChance && rare)
                 return false;
@@ -261,9 +273,9 @@ namespace GatherBuddy.AutoGather
             if (config.Conditions.UseConditions)
             {
 
-                if (config.Conditions.RequiredIntegrity > NodeTarcker.MaxIntegrity)
+                if (config.Conditions.RequiredIntegrity > NodeTracker.MaxIntegrity)
                     return false;
-                if (config.Conditions.UseOnlyOnFirstStep && NodeTarcker.Touched)
+                if (config.Conditions.UseOnlyOnFirstStep && NodeTracker.Touched)
                     return false;
 
                 if (config.Conditions.FilterNodeTypes)
@@ -285,7 +297,7 @@ namespace GatherBuddy.AutoGather
             
             try
             {
-                var glvl = item.GatheringData.GatheringItemLevel.Row;
+                var glvl = item.GatheringData.GatheringItemLevel.RowId;
                 var baseValue = WorldData.BaseGathering[glvl];
                 var stat = CharacterGatheringStat;
 
@@ -306,17 +318,17 @@ namespace GatherBuddy.AutoGather
         {
             if (!Player.Status.Any(s => s.StatusId == Actions.Prospect.EffectId) && Player.Level >= Actions.Prospect.MinLevel)
             {
-                UseAction(Actions.Prospect);
+                EnqueueActionWithDelay(() => UseAction(Actions.Prospect));
                 return true;
             }
             if (!Player.Status.Any(s => s.StatusId == Actions.Sneak.EffectId) && Player.Level >= Actions.Sneak.MinLevel)
             {
-                UseAction(Actions.Sneak);
+                EnqueueActionWithDelay(() => UseAction(Actions.Sneak));
                 return true;
             }
             if (activateTruth && !Player.Status.Any(s => s.StatusId == Actions.Truth.EffectId))
             {
-                UseAction(Actions.Truth);
+                EnqueueActionWithDelay(() => UseAction(Actions.Truth));
                 return true;
             }
             return false;

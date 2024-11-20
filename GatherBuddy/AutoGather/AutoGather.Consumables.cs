@@ -3,7 +3,7 @@ using System.Linq;
 using ECommons.GameHelpers;
 using ECommons.Throttlers;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 
 namespace GatherBuddy.AutoGather
 {
@@ -11,11 +11,11 @@ namespace GatherBuddy.AutoGather
     {
         public static readonly Item[] PossibleCordials = Dalamud.GameData.GetExcelSheet<Item>()?.Where(IsItemCordial).ToArray() ?? [];
 
-        public static readonly Item[] PossibleFoods = Dalamud.GameData.GetExcelSheet<Item>()?.Where(item => IsItemDoLFood(item)).ToArray() ?? [];
+        public static readonly Item[] PossibleFoods = Dalamud.GameData.GetExcelSheet<Item>()?.Where(IsItemDoLFood).ToArray() ?? [];
 
-        public static readonly Item[] PossiblePotions = Dalamud.GameData.GetExcelSheet<Item>()?.Where(item => IsItemDoLPotion(item)).ToArray() ?? [];
+        public static readonly Item[] PossiblePotions = Dalamud.GameData.GetExcelSheet<Item>()?.Where(IsItemDoLPotion).ToArray() ?? [];
 
-        public static readonly Item[] PossibleManuals = Dalamud.GameData.GetExcelSheet<Item>()?.Where(item => IsItemDoLManual(item)).ToArray() ?? [];
+        public static readonly Item[] PossibleManuals = Dalamud.GameData.GetExcelSheet<Item>()?.Where(IsItemDoLManual).ToArray() ?? [];
 
         private static readonly Dictionary<uint, uint> SquadronManualItemIdBuffId = new ()
         {
@@ -25,13 +25,13 @@ namespace GatherBuddy.AutoGather
             { 14953u, 1085u },
             { 41707u, 1084u }
         };
-        public static readonly Item[] PossibleSquadronManuals = Dalamud.GameData.GetExcelSheet<Item>()?.Where(item => IsItemDoLSquadronManual(item)).ToArray() ?? [];
+        public static readonly Item[] PossibleSquadronManuals = Dalamud.GameData.GetExcelSheet<Item>()?.Where(IsItemDoLSquadronManual).ToArray() ?? [];
 
         private static readonly Dictionary<uint, uint> SquadronPassItemIdBuffId = new ()
         {
             { 14954u, 1061u }
         };
-        public static readonly Item[] PossibleSquadronPasses = Dalamud.GameData.GetExcelSheet<Item>()?.Where(item => IsItemDoLSquadronPass(item)).ToArray() ?? [];
+        public static readonly Item[] PossibleSquadronPasses = Dalamud.GameData.GetExcelSheet<Item>()?.Where(IsItemDoLSquadronPass).ToArray() ?? [];
 
 
         public static unsafe int GetInventoryItemCount(uint itemRowId)
@@ -39,25 +39,25 @@ namespace GatherBuddy.AutoGather
             return InventoryManager.Instance()->GetInventoryItemCount(itemRowId < 100000 ? itemRowId : itemRowId - 100000, itemRowId >= 100000);
         }
 
-        private static byte[] GetItemFoodProps(Item item)
+        private static uint[] GetItemFoodProps(Item item)
         {
             // Item UI category: 44 medicine, 46 meal
-            if (item.ItemUICategory.Row is not 44 and not 46
-                || item.ItemAction.Value == null
+            if (item.ItemUICategory.RowId is not 44 and not 46
+                || !item.ItemAction.IsValid
                 // Buff: 48 well fed, 49 medicated
                 || item.ItemAction.Value.Data[0] is not 48 and not 49)
                 return [];
-            return Dalamud.GameData.GetExcelSheet<ItemFood>()?.GetRow(item.ItemAction.Value.Data[1])?.UnkData1.Select(v => v.BaseParam).ToArray() ?? [];
+            return Dalamud.GameData.GetExcelSheet<ItemFood>().GetRow(item.ItemAction.Value.Data[1]).Params.Where(v => v.BaseParam.IsValid).Select(v => v.BaseParam.RowId).ToArray() ?? [];
         }
 
         private static bool IsItemCordial(Item item)
         {
-            return item.ItemAction?.Value?.Type == 1055;
+            return item.ItemAction.Value.Type == 1055;
         }
 
         private static bool IsItemDoLFood(Item item)
         {
-            if (item.ItemUICategory.Row != 46)
+            if (item.ItemUICategory.RowId != 46)
                 return false;
             // 10 GP, 71 gathering, 73 perception
             return GetItemFoodProps(item).Any(p => p is 10 or 72 or 73);
@@ -65,7 +65,7 @@ namespace GatherBuddy.AutoGather
 
         private static bool IsItemDoLPotion(Item item)
         {
-            if (item.ItemUICategory.Row != 44)
+            if (item.ItemUICategory.RowId != 44)
                 return false;
             // 10 GP, 68 spiritbond, 69 durability, 72 gathering, 73 perception
             return GetItemFoodProps(item).Any(p => p is 10 or 68 or 69 or 72 or 73);
@@ -73,9 +73,9 @@ namespace GatherBuddy.AutoGather
 
         private static bool IsItemDoLManual(Item item)
         {
-            if (item.ItemUICategory.Row != 63)
+            if (item.ItemUICategory.RowId != 63)
                 return false;
-            return item.ItemAction?.Value?.Type == 816 && item.ItemAction?.Value?.Data[0] is 302 or 303 or 1752 or 5330;
+            return item.ItemAction.Value.Type == 816 && item.ItemAction.Value.Data[0] is 302 or 303 or 1752 or 5330;
         }
 
         private static bool IsItemDoLSquadronManual(Item item)
@@ -111,11 +111,11 @@ namespace GatherBuddy.AutoGather
                     var configuredItem = PossibleFoods.FirstOrDefault(item => new[] { item.RowId, item.RowId + 100000 }.Contains(GatherBuddy.Config.AutoGatherConfig.FoodConfig.ItemId));
                     if (GatherBuddy.Config.AutoGatherConfig.FoodConfig.ItemId > 100000)
                     {
-                        return buff.Param == configuredItem?.ItemAction.Value?.DataHQ[1] + 10000;
+                        return buff.Param == configuredItem.ItemAction.Value.DataHQ[1] + 10000;
                     }
                     else
                     {
-                        return buff.Param == configuredItem?.ItemAction.Value?.Data[1];
+                        return buff.Param == configuredItem.ItemAction.Value.Data[1];
                     }
                 }
             }
@@ -135,11 +135,11 @@ namespace GatherBuddy.AutoGather
                     var configuredItem = PossiblePotions.FirstOrDefault(item => new[] { item.RowId, item.RowId + 100000 }.Contains(GatherBuddy.Config.AutoGatherConfig.PotionConfig.ItemId));
                     if (GatherBuddy.Config.AutoGatherConfig.PotionConfig.ItemId > 100000)
                     {
-                        return buff.Param == configuredItem?.ItemAction.Value?.DataHQ[1] + 10000;
+                        return buff.Param == configuredItem.ItemAction.Value.DataHQ[1] + 10000;
                     }
                     else
                     {
-                        return buff.Param == configuredItem?.ItemAction.Value?.Data[1];
+                        return buff.Param == configuredItem.ItemAction.Value.Data[1];
                     }
                 }
             }
@@ -198,7 +198,7 @@ namespace GatherBuddy.AutoGather
                 && GetInventoryItemCount(GatherBuddy.Config.AutoGatherConfig.CordialConfig.ItemId) > 0
                 )
                 {
-                    TaskManager.Enqueue(() => UseItem(GatherBuddy.Config.AutoGatherConfig.CordialConfig.ItemId));
+                    EnqueueActionWithDelay(() => UseItem(GatherBuddy.Config.AutoGatherConfig.CordialConfig.ItemId));
                     return true;
                 }
 
@@ -208,7 +208,7 @@ namespace GatherBuddy.AutoGather
                     && GetInventoryItemCount(GatherBuddy.Config.AutoGatherConfig.FoodConfig.ItemId) > 0
                     )
                 {
-                    TaskManager.Enqueue(() => UseItem(GatherBuddy.Config.AutoGatherConfig.FoodConfig.ItemId));
+                    EnqueueActionWithDelay(() => UseItem(GatherBuddy.Config.AutoGatherConfig.FoodConfig.ItemId));
                     return true;
                 }
 
@@ -218,7 +218,7 @@ namespace GatherBuddy.AutoGather
                     && GetInventoryItemCount(GatherBuddy.Config.AutoGatherConfig.PotionConfig.ItemId) > 0
                     )
                 {
-                    TaskManager.Enqueue(() => UseItem(GatherBuddy.Config.AutoGatherConfig.PotionConfig.ItemId));
+                    EnqueueActionWithDelay(() => UseItem(GatherBuddy.Config.AutoGatherConfig.PotionConfig.ItemId));
                     return true;
                 }
             }
@@ -226,7 +226,7 @@ namespace GatherBuddy.AutoGather
         }
 
         // Manuals have cast time and cannot be used while mounted
-        private bool DoUseConsumablesWithCastTime()
+        private uint GetConsumablesWithCastTime()
         {
             if (GatherBuddy.Config.AutoGatherConfig.ManualConfig.UseConsumable
                 && GatherBuddy.Config.AutoGatherConfig.ManualConfig.ItemId > 0
@@ -234,8 +234,7 @@ namespace GatherBuddy.AutoGather
                 && GetInventoryItemCount(GatherBuddy.Config.AutoGatherConfig.ManualConfig.ItemId) > 0
                 )
             {
-                TaskManager.Enqueue(() => UseItem(GatherBuddy.Config.AutoGatherConfig.ManualConfig.ItemId));
-                return true;
+                return GatherBuddy.Config.AutoGatherConfig.ManualConfig.ItemId;
             }
 
             if (GatherBuddy.Config.AutoGatherConfig.SquadronManualConfig.UseConsumable
@@ -244,8 +243,7 @@ namespace GatherBuddy.AutoGather
                 && GetInventoryItemCount(GatherBuddy.Config.AutoGatherConfig.SquadronManualConfig.ItemId) > 0
                 )
             {
-                TaskManager.Enqueue(() => UseItem(GatherBuddy.Config.AutoGatherConfig.SquadronManualConfig.ItemId));
-                return true;
+                return GatherBuddy.Config.AutoGatherConfig.SquadronManualConfig.ItemId;
             }
 
             if (GatherBuddy.Config.AutoGatherConfig.SquadronPassConfig.UseConsumable
@@ -254,10 +252,9 @@ namespace GatherBuddy.AutoGather
                 && GetInventoryItemCount(GatherBuddy.Config.AutoGatherConfig.SquadronPassConfig.ItemId) > 0
                 )
             {
-                TaskManager.Enqueue(() => UseItem(GatherBuddy.Config.AutoGatherConfig.SquadronPassConfig.ItemId));
-                return true;
+                return GatherBuddy.Config.AutoGatherConfig.SquadronPassConfig.ItemId;
             }
-            return false;
+            return 0;
         }
     }
 }
